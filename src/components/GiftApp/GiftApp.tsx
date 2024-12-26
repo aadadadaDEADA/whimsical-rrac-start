@@ -31,12 +31,17 @@ const GiftApp = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleItemDrop = (item: Product) => {
-    setSelectedItems((prev) => [...prev, item]);
+  const handleItemDrop = (item: Product, size: string, personalization: string) => {
+    const itemWithDetails = {
+      ...item,
+      size,
+      personalization
+    };
+    setSelectedItems((prev) => [...prev, itemWithDetails]);
     playTickSound();
     toast({
       title: "Article Ajouté! 🎁",
-      description: "N'oubliez pas que vous pouvez ajouter un message personnalisé à votre cadeau!",
+      description: "N'oubliez pas que vous pouvez ajouter un message personnalisé à votre pack!",
       style: {
         backgroundColor: '#700100',
         color: 'white',
@@ -53,23 +58,13 @@ const GiftApp = () => {
       addToCart({
         ...item,
         quantity: 1,
-        personalization: packNote,
+        personalization: item.personalization || packNote,
       });
     }
 
     toast({
       title: "Pack Ajouté au Panier! 🎉",
-      description: "Souhaitez-vous procéder au paiement?",
-      action: (
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="bg-white text-[#700100] px-4 py-2 rounded-md font-medium"
-          onClick={() => navigate('/cart')}
-        >
-          Voir le Panier
-        </motion.button>
-      ),
+      description: "Vous allez être redirigé vers votre panier",
       style: {
         backgroundColor: '#700100',
         color: 'white',
@@ -78,6 +73,7 @@ const GiftApp = () => {
     });
 
     setIsLoading(false);
+    navigate('/cart');
   };
 
   if (isLoading) {
