@@ -40,13 +40,13 @@ const PersonalizationButton = ({ productId, onSave, initialText = '' }: Personal
       </motion.div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-white">
+        <DialogContent className="sm:max-w-[500px] bg-white shadow-xl border border-gray-100">
           <DialogHeader>
             <DialogTitle className="text-xl font-serif text-[#700100] mb-4 text-center">
               Personnalisation du produit
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 p-6">
+          <div className="space-y-6 p-6 bg-white">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
                 Votre message personnalisé
