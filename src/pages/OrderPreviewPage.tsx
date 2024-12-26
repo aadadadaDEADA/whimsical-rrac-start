@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CreditCard } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import TopNavbar from '@/components/TopNavbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
@@ -10,25 +10,96 @@ import OrderItems from '@/components/order/OrderItems';
 import OrderSummary from '@/components/order/OrderSummary';
 import { HoldToConfirmButton } from '@/components/order/HoldToConfirmButton';
 import { useCart } from '@/components/cart/CartProvider';
+import { submitOrder } from '@/services/orderSubmissionApi';
 
 const OrderPreviewPage = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { hasNewsletterDiscount, calculateTotal } = useCart();
+  const { hasNewsletterDiscount, calculateTotal, cartItems, clearCart } = useCart();
   const { subtotal, discount: newsletterDiscount, total } = calculateTotal();
+  const shipping = subtotal > 500 ? 0 : 7;
+  const finalTotal = total + shipping;
 
-  const handleConfirmOrder = () => {
-    toast({
-      title: "Commande confirmée",
-      description: "Votre commande a été confirmée avec succès",
-      style: {
-        backgroundColor: '#700100',
-        color: 'white',
-        border: '1px solid #590000',
-      },
-    });
-    navigate('/payment-success');
+  const handleConfirmOrder = async () => {
+    if (!state?.orderDetails) {
+      navigate('/cart');
+      return;
+    }
+
+    const { items, userDetails } = state.orderDetails;
+
+    try {
+      // Format items with personalization
+      const formattedItems = items.map((item: any) => ({
+        id: item.id,
+        name: item.personalization 
+          ? `${item.name} (Personnalisation = ${item.personalization})`
+          : item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image,
+        size: item.size || '-',
+        color: item.color || '-',
+        personalization: item.personalization || '-'
+      }));
+
+      // Prepare order submission data
+      const orderData = {
+        order_id: `ORDER-${Date.now()}`,
+        user_details: {
+          first_name: userDetails.firstName,
+          last_name: userDetails.lastName,
+          email: userDetails.email,
+          phone: userDetails.phone,
+          address: userDetails.address,
+          country: userDetails.country,
+          zip_code: userDetails.zipCode
+        },
+        items: formattedItems,
+        price_details: {
+          subtotal,
+          shipping_cost: shipping,
+          has_newsletter_discount: hasNewsletterDiscount,
+          newsletter_discount_amount: newsletterDiscount,
+          final_total: finalTotal
+        },
+        payment: {
+          method: 'cash',
+          status: 'not yet',
+          konnect_payment_url: '-',
+          completed_at: new Date().toISOString()
+        },
+        order_status: {
+          status: 'not yet',
+          shipped_at: '-',
+          delivered_at: '-'
+        }
+      };
+
+      // Submit order
+      await submitOrder(orderData);
+
+      // Clear cart and show success message
+      clearCart();
+      toast({
+        title: "Commande confirmée",
+        description: "Votre commande a été confirmée avec succès",
+        style: {
+          backgroundColor: '#700100',
+          color: 'white',
+          border: '1px solid #590000',
+        },
+      });
+      navigate('/payment-success');
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la confirmation de votre commande",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!state?.orderDetails) {
@@ -36,7 +107,7 @@ const OrderPreviewPage = () => {
     return null;
   }
 
-  const { items, userDetails, shipping, finalTotal } = state.orderDetails;
+  const { items, userDetails } = state.orderDetails;
 
   return (
     <div className="min-h-screen bg-[#F1F0FB]">

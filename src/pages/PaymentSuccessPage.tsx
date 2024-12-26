@@ -5,11 +5,15 @@ import { CheckCircle } from 'lucide-react';
 import { useCart } from '@/components/cart/CartProvider';
 import { useToast } from "@/hooks/use-toast";
 import { updateProductStock } from '@/utils/stockManagement';
+import { submitOrder } from '@/services/orderSubmissionApi';
 
 const PaymentSuccessPage = () => {
   const navigate = useNavigate();
-  const { clearCart } = useCart();
+  const { clearCart, cartItems, hasNewsletterDiscount, calculateTotal } = useCart();
   const { toast } = useToast();
+  const { subtotal, discount: newsletterDiscount, total } = calculateTotal();
+  const shipping = subtotal > 500 ? 0 : 7;
+  const finalTotal = total + shipping;
 
   useEffect(() => {
     const handlePaymentSuccess = async () => {
@@ -22,6 +26,59 @@ const PaymentSuccessPage = () => {
           
           // Update stock
           await updateProductStock(pendingOrder.cartItems);
+
+          // Format items with personalization
+          const formattedItems = pendingOrder.cartItems.map((item: any) => ({
+            id: item.id,
+            name: item.personalization 
+              ? `${item.name} (Personnalisation = ${item.personalization})`
+              : item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+            size: item.size || '-',
+            color: item.color || '-',
+            personalization: item.personalization || '-'
+          }));
+
+          // Get user details from sessionStorage
+          const userDetails = JSON.parse(sessionStorage.getItem('userDetails') || '{}');
+
+          // Prepare order submission data
+          const orderData = {
+            order_id: pendingOrder.orderId,
+            user_details: {
+              first_name: userDetails.firstName,
+              last_name: userDetails.lastName,
+              email: userDetails.email,
+              phone: userDetails.phone,
+              address: userDetails.address,
+              country: userDetails.country,
+              zip_code: userDetails.zipCode
+            },
+            items: formattedItems,
+            price_details: {
+              subtotal,
+              shipping_cost: shipping,
+              has_newsletter_discount: hasNewsletterDiscount,
+              newsletter_discount_amount: newsletterDiscount,
+              final_total: finalTotal
+            },
+            payment: {
+              method: 'card',
+              status: 'completed',
+              konnect_payment_url: pendingOrder.payUrl || '-',
+              completed_at: new Date().toISOString()
+            },
+            order_status: {
+              status: 'not yet',
+              shipped_at: '-',
+              delivered_at: '-'
+            }
+          };
+
+          // Submit order
+          await submitOrder(orderData);
           
           // Clear pending order
           sessionStorage.removeItem('pendingOrder');
@@ -30,7 +87,7 @@ const PaymentSuccessPage = () => {
         // Clear the cart and show success message
         clearCart();
         toast({
-          title: "Paiement réussi!",
+          title: "Paiement réussi !",
           description: "Votre commande a été confirmée et sera traitée dans les plus brefs délais.",
           variant: "default",
         });
@@ -45,7 +102,7 @@ const PaymentSuccessPage = () => {
     };
 
     handlePaymentSuccess();
-  }, [clearCart, toast]);
+  }, [clearCart, toast, hasNewsletterDiscount, subtotal, newsletterDiscount, finalTotal]);
 
   return (
     <div className="min-h-screen bg-[#F1F0FB] flex items-center justify-center p-4">
