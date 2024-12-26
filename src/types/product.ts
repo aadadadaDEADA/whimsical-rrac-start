@@ -26,4 +26,6 @@ export interface Product {
   type_product: string;
   category_product: string;
   itemgroup_product: string;
+  size?: string;
+  personalization?: string;
 }
