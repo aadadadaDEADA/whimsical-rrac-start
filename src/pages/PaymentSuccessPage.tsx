@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { useCart } from '@/components/cart/CartProvider';
-import { useToast } from "@/hooks/use-toast";
 import { updateProductStock } from '@/utils/stockManagement';
 import { submitOrder } from '@/services/orderSubmissionApi';
 
 const PaymentSuccessPage = () => {
   const navigate = useNavigate();
   const { clearCart, cartItems, hasNewsletterDiscount, calculateTotal } = useCart();
-  const { toast } = useToast();
   const { subtotal, discount: newsletterDiscount, total } = calculateTotal();
   const shipping = subtotal > 500 ? 0 : 7;
   const finalTotal = total + shipping;
@@ -27,6 +25,9 @@ const PaymentSuccessPage = () => {
           // Update stock
           await updateProductStock(pendingOrder.cartItems);
 
+          // Get user details from sessionStorage
+          const userDetails = JSON.parse(sessionStorage.getItem('userDetails') || '{}');
+
           // Format items with personalization
           const formattedItems = pendingOrder.cartItems.map((item: any) => ({
             id: item.id,
@@ -40,9 +41,6 @@ const PaymentSuccessPage = () => {
             color: item.color || '-',
             personalization: item.personalization || '-'
           }));
-
-          // Get user details from sessionStorage
-          const userDetails = JSON.parse(sessionStorage.getItem('userDetails') || '{}');
 
           // Prepare order submission data
           const orderData = {
@@ -65,7 +63,7 @@ const PaymentSuccessPage = () => {
               final_total: finalTotal
             },
             payment: {
-              method: 'card',
+              method: 'card' as const,
               status: 'completed',
               konnect_payment_url: pendingOrder.payUrl || '-',
               completed_at: new Date().toISOString()
@@ -84,25 +82,15 @@ const PaymentSuccessPage = () => {
           sessionStorage.removeItem('pendingOrder');
         }
 
-        // Clear the cart and show success message
+        // Clear the cart
         clearCart();
-        toast({
-          title: "Paiement réussi !",
-          description: "Votre commande a été confirmée et sera traitée dans les plus brefs délais.",
-          variant: "default",
-        });
       } catch (error) {
         console.error('Error processing payment success:', error);
-        toast({
-          title: "Attention",
-          description: "Commande confirmée mais une erreur est survenue lors de la mise à jour du stock.",
-          variant: "destructive",
-        });
       }
     };
 
     handlePaymentSuccess();
-  }, [clearCart, toast, hasNewsletterDiscount, subtotal, newsletterDiscount, finalTotal]);
+  }, [clearCart, hasNewsletterDiscount, subtotal, newsletterDiscount, finalTotal]);
 
   return (
     <div className="min-h-screen bg-[#F1F0FB] flex items-center justify-center p-4">
