@@ -20,11 +20,18 @@ const ProductSelectionPanel = ({ onItemDrop }: ProductSelectionPanelProps) => {
     queryFn: fetchAllProducts
   });
 
-  const categories = ['tous', 'costume', 'veste', 'chemise', 'accessoire'];
+  // Get unique itemgroup_product values and format them
+  const categories = ['tous', ...new Set(products.map(p => p.itemgroup_product))].map(category => ({
+    value: category,
+    label: category === 'tous' ? 'Tous' : 
+           category.split('-')
+                 .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                 .join(' ')
+  }));
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'tous' || product.category_product.toLowerCase() === selectedCategory;
+    const matchesCategory = selectedCategory === 'tous' || product.itemgroup_product === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -38,9 +45,9 @@ const ProductSelectionPanel = ({ onItemDrop }: ProductSelectionPanelProps) => {
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-lg rounded-xl shadow-xl p-6 border border-white/20 h-full">
-      <div className="space-y-6">
-        <div className="relative">
+    <div className="bg-white/90 backdrop-blur-lg rounded-xl shadow-xl p-6 border border-white/20 h-full flex flex-col">
+      <div className="space-y-6 flex-1 flex flex-col">
+        <div className="relative flex-shrink-0">
           <Search className="absolute left-3 top-3 text-gray-400" size={20} />
           <Input
             type="text"
@@ -51,23 +58,23 @@ const ProductSelectionPanel = ({ onItemDrop }: ProductSelectionPanelProps) => {
           />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-          {categories.map((category) => (
+        <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar flex-shrink-0">
+          {categories.map(({ value, label }) => (
             <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
+              key={value}
+              onClick={() => setSelectedCategory(value)}
               className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${
-                selectedCategory === category
+                selectedCategory === value
                   ? 'bg-[#700100] text-white shadow-md transform scale-105'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
+              {label}
             </button>
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 overflow-y-auto max-h-[calc(100vh-300px)]">
+        <div className="grid grid-cols-2 gap-4 overflow-y-auto flex-1 min-h-0">
           {filteredProducts.map((product) => (
             <motion.div
               key={product.id}
