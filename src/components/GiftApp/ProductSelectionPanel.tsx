@@ -85,12 +85,12 @@ const ProductSelectionPanel = ({ onItemDrop }: ProductSelectionPanelProps) => {
                 <img
                   src={product.image}
                   alt={product.name}
-                  className="w-full h-32 object-contain mb-2"
+                  className="w-full h-24 object-contain mb-2"
                 />
                 <h3 className="text-sm font-medium text-gray-900 truncate">
                   {product.name}
                 </h3>
-                <p className="text-sm text-[#700100] font-medium">{product.price} TND</p>
+                <p className="text-sm text-[#700100] font-medium mt-1">{product.price} TND</p>
               </div>
             </motion.div>
           ))}
