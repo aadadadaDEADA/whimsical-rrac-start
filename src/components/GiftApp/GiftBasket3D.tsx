@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Product } from '@/types/product';
-import { Gift, Plus } from 'lucide-react';
 import { playTickSound } from '@/utils/audio';
 import {
   Dialog,
@@ -9,41 +7,38 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { X, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import SizeSelector from '../product-detail/SizeSelector';
 import PersonalizationButton from '../product-detail/PersonalizationButton';
+import GiftContainer from './containers/GiftContainer';
+import ProductImageCarousel from '../product-detail/ProductImageCarousel';
+import { toast } from '@/components/ui/use-toast';
 
 interface GiftBasket3DProps {
   items: Product[];
-  onItemDrop?: (item: Product, size: string, personalization: string) => void;
+  onItemDrop: (item: Product, size: string, personalization: string) => void;
+  onRemoveItem?: (index: number) => void;
 }
 
-const GiftBasket3D = ({ items, onItemDrop }: GiftBasket3DProps) => {
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
+const GiftBasket3D = ({ items, onItemDrop, onRemoveItem }: GiftBasket3DProps) => {
   const [showDialog, setShowDialog] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
   const [personalization, setPersonalization] = useState('');
   const [droppedItem, setDroppedItem] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [targetContainer, setTargetContainer] = useState<number>(0);
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const container1Items = items.slice(0, 2);
+  const container2Items = items.slice(2, 3);
+  const container3Items = items.slice(3, 4);
+
+  const handleDrop = (containerId: number) => (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setIsDraggingOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDraggingOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDraggingOver(false);
     const item = JSON.parse(e.dataTransfer.getData('product'));
     setDroppedItem(item);
+    setTargetContainer(containerId);
     setShowDialog(true);
     playTickSound();
   };
@@ -55,140 +50,80 @@ const GiftBasket3D = ({ items, onItemDrop }: GiftBasket3DProps) => {
       setSelectedSize('');
       setPersonalization('');
       setDroppedItem(null);
+      toast({
+        title: "Article ajouté au pack",
+        description: "L'article a été ajouté avec succès à votre pack cadeau",
+        style: {
+          backgroundColor: '#700100',
+          color: 'white',
+          border: '1px solid #590000',
+        },
+      });
+    }
+  };
+
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setShowProductModal(true);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    if (onRemoveItem) {
+      onRemoveItem(index);
+      toast({
+        title: "Article retiré",
+        description: "L'article a été retiré de votre pack cadeau",
+        style: {
+          backgroundColor: '#700100',
+          color: 'white',
+          border: '1px solid #590000',
+        },
+      });
     }
   };
 
   return (
     <>
-      <div 
-        className="relative h-[600px] w-full rounded-2xl bg-gradient-to-br from-white/95 to-gray-50 backdrop-blur-sm shadow-2xl overflow-hidden border border-gray-100"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <div className="p-6 h-full overflow-y-auto">
-          <AnimatePresence mode="popLayout">
-            {items.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {items.map((item, index) => (
-                  <motion.div
-                    key={`${item.id}-${index}`}
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                    transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
-                    className="bg-white rounded-xl shadow-lg p-4 border border-gray-50 hover:shadow-xl transition-all transform hover:-translate-y-1"
-                  >
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="relative group cursor-pointer">
-                            <div className="aspect-square rounded-lg overflow-hidden bg-gray-50 mb-3">
-                              <motion.img
-                                src={item.image}
-                                alt={item.name}
-                                className="w-full h-full object-contain p-2"
-                                initial={{ scale: 0.8 }}
-                                animate={{ scale: 1 }}
-                                transition={{ duration: 0.2 }}
-                              />
-                            </div>
-                            <h4 className="text-sm font-medium text-gray-900 truncate">
-                              {item.name}
-                              {item.personalization && (
-                                <span className="text-[#700100] ml-1">
-                                  (Personnalisé)
-                                </span>
-                              )}
-                            </h4>
-                            <div className="flex items-center justify-between mt-1">
-                              <p className="text-sm text-[#700100] font-semibold">
-                                {item.price} TND
-                              </p>
-                              <span className="text-xs text-gray-500">
-                                Taille: {item.size}
-                              </span>
-                            </div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-sm font-medium">{item.name}</p>
-                          {item.personalization && (
-                            <p className="text-xs text-gray-500">
-                              Personnalisation: {item.personalization}
-                            </p>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <motion.div 
-                className="flex flex-col items-center justify-center h-full text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <motion.div
-                  animate={{
-                    y: [0, -10, 0],
-                    scale: isDraggingOver ? 1.1 : 1,
-                  }}
-                  transition={{
-                    y: {
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    },
-                    scale: {
-                      duration: 0.2,
-                    },
-                  }}
-                  className="mb-4"
-                >
-                  <Gift className="w-20 h-20 text-[#700100] mx-auto" />
-                </motion.div>
-                <h3 className="text-xl font-medium text-[#700100] mb-2">
-                  Composez Votre Pack
-                </h3>
-                <p className="text-gray-500 max-w-sm">
-                  Glissez et déposez vos articles préférés ici
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      <div className="flex flex-col gap-4 h-[600px]">
+        <div className="h-[300px]">
+          <GiftContainer
+            items={container1Items}
+            maxItems={2}
+            onDrop={handleDrop(0)}
+            containerTitle="Pack Principal"
+            className="h-full bg-white/95 backdrop-blur-sm shadow-xl rounded-xl border border-gray-100"
+            onItemClick={handleProductClick}
+            onRemoveItem={(index) => handleRemoveItem(index)}
+          />
         </div>
-
-        <AnimatePresence>
-          {isDraggingOver && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#700100]/5 backdrop-blur-sm flex items-center justify-center"
-            >
-              <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: Infinity,
-                }}
-                className="bg-white/90 rounded-full p-6 shadow-2xl"
-              >
-                <Plus className="w-12 h-12 text-[#700100]" />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        
+        <div className="grid grid-cols-2 gap-4 h-[250px]">
+          <GiftContainer
+            items={container2Items}
+            maxItems={1}
+            onDrop={handleDrop(1)}
+            containerTitle="Pack Secondaire 1"
+            className="h-full bg-white/95 backdrop-blur-sm shadow-xl rounded-xl border border-gray-100"
+            onItemClick={handleProductClick}
+            onRemoveItem={(index) => handleRemoveItem(index + 2)}
+          />
+          <GiftContainer
+            items={container3Items}
+            maxItems={1}
+            onDrop={handleDrop(2)}
+            containerTitle="Pack Secondaire 2"
+            className="h-full bg-white/95 backdrop-blur-sm shadow-xl rounded-xl border border-gray-100"
+            onItemClick={handleProductClick}
+            onRemoveItem={(index) => handleRemoveItem(index + 3)}
+          />
+        </div>
       </div>
 
+      {/* Add Item Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] bg-white/95">
           <DialogHeader>
-            <DialogTitle className="text-xl font-serif text-[#700100] mb-4">
+            <DialogTitle className="text-xl font-serif text-[#6D0201] mb-4">
               Personnalisez votre article
             </DialogTitle>
           </DialogHeader>
@@ -205,20 +140,62 @@ const GiftBasket3D = ({ items, onItemDrop }: GiftBasket3DProps) => {
               initialText={personalization}
             />
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={handleConfirm}
               className={`w-full py-4 rounded-xl text-white font-medium ${
                 !selectedSize
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-[#700100] hover:bg-[#590000]'
+                  : 'bg-[#6D0201] hover:bg-[#590000]'
               }`}
               disabled={!selectedSize}
             >
               Confirmer
-            </motion.button>
+            </button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Product Details Modal */}
+      <Dialog open={showProductModal} onOpenChange={setShowProductModal}>
+        <DialogContent className="sm:max-w-[800px] bg-white/95">
+          <button
+            onClick={() => setShowProductModal(false)}
+            className="absolute right-4 top-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+          
+          {selectedProduct && (
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <ProductImageCarousel 
+                  images={[selectedProduct.image]} 
+                  name={selectedProduct.name} 
+                />
+              </div>
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-[#6D0201]">
+                  {selectedProduct.name}
+                </h2>
+                <p className="text-xl font-semibold">
+                  {selectedProduct.price} TND
+                </p>
+                <p className="text-gray-600">
+                  {selectedProduct.description}
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2">Matière</h3>
+                    <p className="text-gray-600">{selectedProduct.material}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-2">Couleur</h3>
+                    <p className="text-gray-600">{selectedProduct.color}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
