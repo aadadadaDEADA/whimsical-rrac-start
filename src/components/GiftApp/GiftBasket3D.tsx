@@ -58,6 +58,7 @@ const GiftBasket3D = ({ items, onItemDrop, onRemoveItem }: GiftBasket3DProps) =>
           color: 'white',
           border: '1px solid #590000',
         },
+        duration: 3000, // Set duration to 3 seconds
       });
     }
   };
