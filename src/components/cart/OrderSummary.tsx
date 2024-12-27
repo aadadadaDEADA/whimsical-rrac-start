@@ -1,5 +1,6 @@
 import React from 'react';
 import { CartItem } from './CartProvider';
+import { UserDetails } from '@/utils/userDetailsStorage';
 
 interface OrderSummaryProps {
   total: number;
@@ -46,16 +47,20 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
         </div>
       </div>
       {userDetails && (
-        <div className="mt-4">
+        <div className="mt-4 border-t pt-4">
           <h3 className="text-lg font-semibold">Détails de l'utilisateur</h3>
-          <p>{userDetails.first_name} {userDetails.last_name}</p>
-          <p>{userDetails.email}</p>
-          <p>{userDetails.phone}</p>
+          <div className="space-y-1 mt-2 text-sm text-gray-600">
+            <p>{userDetails.firstName} {userDetails.lastName}</p>
+            <p>{userDetails.email}</p>
+            <p>{userDetails.phone}</p>
+            <p>{userDetails.address}</p>
+            <p>{userDetails.zipCode} {userDetails.country}</p>
+          </div>
         </div>
       )}
       <div className="mt-4 flex justify-between">
         {onEditDetails && (
-          <button onClick={onEditDetails} className="text-blue-500 hover:underline">
+          <button onClick={onEditDetails} className="text-[#700100] hover:underline">
             Modifier les détails
           </button>
         )}
